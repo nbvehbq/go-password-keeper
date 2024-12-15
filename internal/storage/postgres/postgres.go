@@ -92,3 +92,67 @@ func (s *Storage) GetUserByLogin(ctx context.Context, login string) (*model.User
 
 	return &user, nil
 }
+
+func (s *Storage) CreateSecret(ctx context.Context, data *model.Secret) (int64, error) {
+	query := `INSERT INTO secret (user_id, type, payload, meta) VALUES ($1, $2, $3, $4) RETURNING id;`
+
+	var id int64
+	if err := s.db.QueryRowContext(ctx, query, data.UserID, data.Type, data.Payload, data.Meta).
+		Scan(&id); err != nil {
+		return 0, errors.Wrap(err, "create secret")
+	}
+
+	return id, nil
+}
+
+func (s *Storage) ListSecrets(ctx context.Context, userID int64, param uint8) ([]model.Secret, error) {
+	var secrets []model.Secret
+
+	query := `SELECT id, user_id, type, payload, meta FROM "secret" WHERE user_id = $1 and type = $2;`
+	if param == 0 {
+		query = `SELECT id, user_id, type, payload, meta FROM "secret" WHERE user_id = $1 and type > $2;`
+	}
+
+	if err := s.db.SelectContext(ctx, &secrets, query, userID, param); err != nil {
+		return nil, errors.Wrap(err, "list secrets")
+	}
+
+	return secrets, nil
+}
+
+func (s *Storage) GetSecret(ctx context.Context, id int64) (*model.Secret, error) {
+	var secret model.Secret
+
+	query := `SELECT id, user_id, type, payload, meta FROM "secret" WHERE id = $1;`
+	if err := s.db.GetContext(ctx, &secret, query, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrSecretNotFound
+		}
+		return nil, errors.Wrap(err, "get secret")
+	}
+
+	return &secret, nil
+}
+
+func (s *Storage) UpdateSecret(ctx context.Context, id int64, data *model.Secret) (int64, error) {
+	query := `UPDATE secret SET type = $2, payload = $3, meta = $4 WHERE id = $1 RETURNING id;`
+
+	var newID int64
+	if err := s.db.QueryRowContext(ctx, query, id, data.Type, data.Payload, data.Meta).
+		Scan(&newID); err != nil {
+		return 0, errors.Wrap(err, "update secret")
+	}
+
+	return newID, nil
+}
+
+func (s *Storage) DeleteSecret(ctx context.Context, id int64) error {
+	query := `DELETE FROM secret WHERE id = $1;`
+
+	_, err := s.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return errors.Wrap(err, "delete secret")
+	}
+
+	return nil
+}
