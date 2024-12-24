@@ -44,6 +44,7 @@ func initDatabaseStructure(ctx context.Context, db *sqlx.DB) error {
 	create table if not exists "secret"
 	(
 	    id serial primary key,
+			name varchar unique not null,
 	    user_id int,
 	    type int not null,
 	    payload bytea,
@@ -94,11 +95,15 @@ func (s *Storage) GetUserByLogin(ctx context.Context, login string) (*model.User
 }
 
 func (s *Storage) CreateSecret(ctx context.Context, data *model.Secret) (int64, error) {
-	query := `INSERT INTO secret (user_id, type, payload, meta) VALUES ($1, $2, $3, $4) RETURNING id;`
+	query := `INSERT INTO secret (user_id, "name", type, payload, meta) VALUES ($1, $2, $3, $4, $5) RETURNING id;`
 
 	var id int64
-	if err := s.db.QueryRowContext(ctx, query, data.UserID, data.Type, data.Payload, data.Meta).
+	if err := s.db.QueryRowContext(ctx, query, data.UserID, data.Name, data.Type, data.Payload, data.Meta).
 		Scan(&id); err != nil {
+		var pqErr *pgconn.PgError
+		if errors.As(err, &pqErr) && pgerrcode.UniqueViolation == pqErr.Code {
+			return id, storage.ErrSecretExists
+		}
 		return 0, errors.Wrap(err, "create secret")
 	}
 
@@ -108,9 +113,9 @@ func (s *Storage) CreateSecret(ctx context.Context, data *model.Secret) (int64, 
 func (s *Storage) ListSecrets(ctx context.Context, userID int64, param uint8) ([]model.Secret, error) {
 	var secrets []model.Secret
 
-	query := `SELECT id, user_id, type, payload, meta FROM "secret" WHERE user_id = $1 and type = $2;`
+	query := `SELECT id, "name", user_id, type, payload, meta FROM "secret" WHERE user_id = $1 and type = $2;`
 	if param == 0 {
-		query = `SELECT id, user_id, type, payload, meta FROM "secret" WHERE user_id = $1 and type > $2;`
+		query = `SELECT id, "name", user_id, type, payload, meta FROM "secret" WHERE user_id = $1 and type > $2;`
 	}
 
 	if err := s.db.SelectContext(ctx, &secrets, query, userID, param); err != nil {
@@ -123,7 +128,7 @@ func (s *Storage) ListSecrets(ctx context.Context, userID int64, param uint8) ([
 func (s *Storage) GetSecret(ctx context.Context, id int64) (*model.Secret, error) {
 	var secret model.Secret
 
-	query := `SELECT id, user_id, type, payload, meta FROM "secret" WHERE id = $1;`
+	query := `SELECT id, "name", user_id, type, payload, meta FROM "secret" WHERE id = $1;`
 	if err := s.db.GetContext(ctx, &secret, query, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, storage.ErrSecretNotFound

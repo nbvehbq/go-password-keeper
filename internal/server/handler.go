@@ -128,12 +128,18 @@ func (s *Server) createSecretHandler(res http.ResponseWriter, req *http.Request)
 
 	id, err := s.storage.CreateSecret(ctx, &model.Secret{
 		UserID:  UID(ctx),
+		Name:    dto.Name,
 		Type:    dto.Type,
 		Payload: dto.Payload,
 		Meta:    dto.Meta,
 	})
 	if err != nil {
-		JSONError(res, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, storage.ErrSecretExists):
+			JSONError(res, err.Error(), http.StatusConflict)
+		default:
+			JSONError(res, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -168,11 +174,7 @@ func (s *Server) listSecretHandler(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 
-	value := struct {
-		Secrets []model.Secret `json:"secrets"`
-	}{Secrets: list}
-
-	if err := json.NewEncoder(res).Encode(value); err != nil {
+	if err := json.NewEncoder(res).Encode(list); err != nil {
 		JSONError(res, err.Error(), http.StatusBadRequest)
 		return
 	}

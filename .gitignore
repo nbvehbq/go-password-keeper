@@ -24,3 +24,4 @@ vendor/
 .env
 
 bin/
+keys/
