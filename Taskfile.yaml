@@ -3,9 +3,17 @@ version: "3"
 tasks:
   default:
     cmds:
-      - task: start
+      - task: server
 
-  start:
+  server:
     cmds:
       - cmd: go run ./cmd/server {{.CLI_ARGS}}
         ignore_error: true
+
+  client:
+    cmds:
+      - cmd: go run ./cmd/client {{.CLI_ARGS}}
+
+  build:
+    cmds:
+      - cmd: go build -o ./bin/keeper ./cmd/client

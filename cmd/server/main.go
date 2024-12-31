@@ -26,7 +26,6 @@ func main() {
 	fmt.Printf(greetings, buildVersion, buildDate, buildCommit)
 
 	cfg, err := server.NewConfig()
-
 	if err != nil {
 		log.Fatal(err, "Load config")
 	}

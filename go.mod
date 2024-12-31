@@ -12,14 +12,23 @@ require (
 )
 
 require (
+	github.com/abiosoft/readline v0.0.0-20180607040430-155bce2042db // indirect
+	github.com/fatih/color v1.12.0 // indirect
+	github.com/flynn-archive/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/mattn/go-isatty v0.0.12 // indirect
+	golang.org/x/net v0.27.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 )
 
 require (
+	github.com/abiosoft/ishell/v2 v2.0.2
 	github.com/caarlos0/env/v11 v11.2.2
+	github.com/go-resty/resty/v2 v2.16.2
 	github.com/jmoiron/sqlx v1.4.0
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.31.0
